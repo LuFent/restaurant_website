@@ -1,8 +1,16 @@
 from django.http import JsonResponse
 from django.templatetags.static import static
-from phonenumbers import parse
+from phonenumbers import parse, is_valid_number
+from phonenumbers.phonenumberutil import NumberParseException
 import json
 from .models import Product, ProductEntity, Order
+from rest_framework.decorators import api_view
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.serializers import CharField
+from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ListField
+from rest_framework.serializers import IntegerField, SlugRelatedField
 
 
 def banners_list_api(request):
@@ -57,18 +65,37 @@ def product_list_api(request):
     })
 
 
+class ProductEntitySerializer(ModelSerializer):
+    product = SlugRelatedField(slug_field='id', queryset=Product.objects.all())
+    
+    class Meta:
+        model = ProductEntity
+        fields = ['quantity', 'product']
+
+
+class OrderSerializer(ModelSerializer):
+    products = ProductEntitySerializer(many=True, allow_empty=False)  # обратите внимание на many=True
+
+    class Meta:
+        model = Order
+        fields = ['phonenumber', 'lastname', 'firstname', 'address', 'products']
+
+
+@api_view(['POST'])
 def register_order(request):
-    order = json.loads(request.body.decode())
-    order_obj = Order.objects.create(
-                 address=order['address'],
-                 first_name=order['firstname'],
-                 last_name=order['lastname'],
-                 phone_number=parse(order['phonenumber'], None))
+    burg = Product.objects.get(id=2)
+    serializer = OrderSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)  # выкинет ValidationError
 
-    for product in order['products']:
-        ProductEntity.objects.create(
-                             product_type=Product.objects.get(id=product['product']),
-                             order=order_obj,
-                             count=product['quantity'])
+    order = Order.objects.create(
+        address = serializer.validated_data['address'],
+        firstname = serializer.validated_data['firstname'],
+        lastname = serializer.validated_data['lastname'],
+        phonenumber = serializer.validated_data['phonenumber'],
+    )
+    product_fields = serializer.validated_data['products']
+    products = [ProductEntity(order=order, product=fields['product'], quantity=fields['quantity']) for fields in product_fields]
+    ProductEntity.objects.bulk_create(products)
+    return Response({})
 
-    return JsonResponse({})
+

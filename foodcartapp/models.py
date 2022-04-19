@@ -125,9 +125,9 @@ class RestaurantMenuItem(models.Model):
 
 class Order(models.Model):
     address = models.CharField(max_length=100, verbose_name='Адресс')
-    first_name = models.CharField(max_length=50, verbose_name='Имя')
-    last_name = models.CharField(max_length=50, verbose_name='Фамилия')
-    phone_number = PhoneNumberField(db_index=True, verbose_name='Номер телефона')
+    firstname = models.CharField(max_length=50, verbose_name='Имя')
+    lastname = models.CharField(max_length=50, verbose_name='Фамилия')
+    phonenumber = PhoneNumberField(db_index=True, verbose_name='Номер телефона')
 
     class Meta:
         verbose_name = 'заказ'
@@ -138,16 +138,16 @@ class Order(models.Model):
 
 
 class ProductEntity(models.Model):
-    product_type = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Продукт')
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, verbose_name='Заказ')
-    count = models.IntegerField(verbose_name='Кол-во')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Продукт')
+    order = models.ForeignKey(Order, related_name='products', on_delete=models.CASCADE, verbose_name='Заказ')
+    quantity = models.IntegerField(verbose_name='Кол-во')
 
     class Meta:
         verbose_name = 'заказаннй продукт'
         verbose_name_plural = 'заказанные продукты'
 
     def __str__(self):
-        return f'{self.count} единицы "{self.product_type.name}" для заказа {self.order.id}'
+        return f'{self.quantity} единицы "{self.product.name}" для заказа {self.order.id}'
 
 
 
