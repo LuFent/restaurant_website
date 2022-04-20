@@ -67,14 +67,14 @@ def product_list_api(request):
 
 class ProductEntitySerializer(ModelSerializer):
     product = SlugRelatedField(slug_field='id', queryset=Product.objects.all())
-    
+
     class Meta:
         model = ProductEntity
         fields = ['quantity', 'product']
 
 
 class OrderSerializer(ModelSerializer):
-    products = ProductEntitySerializer(many=True, allow_empty=False)  # обратите внимание на many=True
+    products = ProductEntitySerializer(many=True, allow_empty=False, write_only=True)
 
     class Meta:
         model = Order
@@ -83,7 +83,7 @@ class OrderSerializer(ModelSerializer):
 
 @api_view(['POST'])
 def register_order(request):
-    burg = Product.objects.get(id=2)
+
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)  # выкинет ValidationError
 
@@ -96,6 +96,4 @@ def register_order(request):
     product_fields = serializer.validated_data['products']
     products = [ProductEntity(order=order, product=fields['product'], quantity=fields['quantity']) for fields in product_fields]
     ProductEntity.objects.bulk_create(products)
-    return Response({})
-
-
+    return Response({**dict(serializer.data), 'id': order.id})
