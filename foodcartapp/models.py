@@ -2,6 +2,8 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from phonenumber_field.modelfields import PhoneNumberField
 from django.db.models import F, Count
+from django.core.validators import MinValueValidator, BaseValidator
+from django.core.exceptions import ValidationError
 
 
 class Restaurant(models.Model):
@@ -125,8 +127,10 @@ class RestaurantMenuItem(models.Model):
 
 
 class OrderQuerySet(models.QuerySet):
-    def fetch_with_price(self):
-        prices = models.ExpressionWrapper(models.F('products__product__price') * models.F('products__quantity'), output_field=models.IntegerField())
+    def fetch_with_order_price(self):
+        prices = models.ExpressionWrapper(models.F('products__price') * models.F('products__quantity'),
+                                          output_field=models.DecimalField(max_digits=8, decimal_places=2))
+
         return self.annotate(order_price=models.Sum(prices))
 
 
@@ -149,6 +153,7 @@ class ProductEntity(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Продукт')
     order = models.ForeignKey(Order, related_name='products', on_delete=models.CASCADE, verbose_name='Заказ')
     quantity = models.IntegerField(verbose_name='Кол-во')
+    price = models.DecimalField(verbose_name='Цена позиции', null=True, max_digits=7, decimal_places=2, validators=[MinValueValidator(0.0)])
 
     class Meta:
         verbose_name = 'заказаннй продукт'

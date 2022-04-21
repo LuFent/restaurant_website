@@ -11,6 +11,7 @@ from rest_framework.serializers import CharField
 from rest_framework.serializers import ModelSerializer
 from rest_framework.serializers import ListField
 from rest_framework.serializers import IntegerField, SlugRelatedField
+from django.db import transaction
 
 
 def banners_list_api(request):
@@ -81,6 +82,7 @@ class OrderSerializer(ModelSerializer):
         fields = ['phonenumber', 'lastname', 'firstname', 'address', 'products']
 
 
+@transaction.atomic
 @api_view(['POST'])
 def register_order(request):
 
@@ -93,7 +95,12 @@ def register_order(request):
         lastname = serializer.validated_data['lastname'],
         phonenumber = serializer.validated_data['phonenumber'],
     )
+
     product_fields = serializer.validated_data['products']
-    products = [ProductEntity(order=order, product=fields['product'], quantity=fields['quantity']) for fields in product_fields]
+    products = [ProductEntity(order=order,
+                              product=fields['product'],
+                              quantity=fields['quantity'],
+                              price=fields['product'].price)
+                for fields in product_fields]
     ProductEntity.objects.bulk_create(products)
     return Response({**dict(serializer.data), 'id': order.id})
