@@ -99,4 +99,4 @@ def view_orders(request):
     orders = Order.objects.filter(status='unprocessed').fetch_with_order_price()
 
     return render(request, template_name='order_items.html',
-                  context={'order_items': orders,}) 
+                  context={'order_items': orders,})

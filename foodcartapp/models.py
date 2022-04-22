@@ -141,10 +141,13 @@ class Order(models.Model):
     phonenumber = PhoneNumberField(db_index=True, verbose_name='Номер телефона')
     objects = OrderQuerySet.as_manager()
     status = models.CharField(default='unprocessed',
+                              verbose_name='статус заказа',
                               max_length=25,
                               db_index=True,
                               choices=[('processed', 'Обработан'),
                                        ('unprocessed', 'Не обработан')])
+
+    comment = models.TextField(blank=True, verbose_name='коментарий к заказу', )
 
     class Meta:
         verbose_name = 'заказ'
