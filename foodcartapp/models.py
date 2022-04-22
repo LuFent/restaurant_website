@@ -4,7 +4,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 from django.db.models import F, Count
 from django.core.validators import MinValueValidator, BaseValidator
 from django.core.exceptions import ValidationError
-
+from django.shortcuts import redirect
 
 class Restaurant(models.Model):
     name = models.CharField(
@@ -140,6 +140,11 @@ class Order(models.Model):
     lastname = models.CharField(max_length=50, verbose_name='Фамилия')
     phonenumber = PhoneNumberField(db_index=True, verbose_name='Номер телефона')
     objects = OrderQuerySet.as_manager()
+    status = models.CharField(default='unprocessed',
+                              max_length=25,
+                              db_index=True,
+                              choices=[('processed', 'Обработан'),
+                                       ('unprocessed', 'Не обработан')])
 
     class Meta:
         verbose_name = 'заказ'
@@ -147,6 +152,14 @@ class Order(models.Model):
 
     def __str__(self):
         return f'Заказ {self.id}'
+
+    def response_change(self, request, obj):
+        print(1111111) #
+        res = super(ModelAdmin, self).response_change(request, obj)
+        if "next" in request.GET:
+            return redirect(request.GET['next'])
+        else:
+            return res
 
 
 class ProductEntity(models.Model):

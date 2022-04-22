@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 from foodcartapp.models import Product, Restaurant, Order
+from django.template.context_processors import request as request_processor
+from django.template import RequestContext
 
 
 class Login(forms.Form):
@@ -94,8 +96,7 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    orders = Order.objects.fetch_with_order_price()
+    orders = Order.objects.filter(status='unprocessed').fetch_with_order_price()
 
-    return render(request, template_name='order_items.html', context={
-        'order_items': orders,
-    })
+    return render(request, template_name='order_items.html',
+                  context={'order_items': orders,}) 
