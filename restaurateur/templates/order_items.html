@@ -1,42 +1,57 @@
 {% extends 'base_restaurateur_page.html' %}
 {% load admin_urls %}
+{% load get_by_key %}
 {% block title %}Необработанные заказы | Star Burger{% endblock %}
 
 {% block content %}
-  <center>
-    <h2>Необработанные заказы</h2>
-  </center>
+<center>
+  <h2>Необработанные заказы</h2>
+</center>
 
-  <hr/>
-  <br/>
-  <br/>
-  <div class="container">
-   <table class="table table-responsive">
-     <tr>
-       <th>ID заказа</th>
-       <th>Статус</th>
-       <th>Цена</th>
-       <th>Клиент</th>
-       <th>Телефон</th>
-       <th>Адрес доставки</th>
-       <th>Коментарий</th>
-       <th>ССЫЛКА</th>
-     </tr>
+<hr />
+<br />
+<br />
+<div class="container">
+  <table class="table table-responsive">
+    <tr>
+      <th>ID заказа</th>
+      <th>Статус</th>
+      <th>Цена</th>
+      <th>Способ оплаты</th>
+      <th>Клиент</th>
+      <th>Телефон</th>
+      <th>Адрес доставки</th>
+      <th>Коментарий</th>
+      <th>Рестораны</th>
+      <th>ССЫЛКА</th>
+    </tr>
 
     {% for item in order_items %}
-     <tr>
-       <td>{{item.id}}</td>
-       <td>{{item.get_status_display}}</td>
-       <td>{{item.order_price}} Руб. </td>
-       <td>{{item.firstname}} {{item.lastname}} </td>
-       <td>{{item.phonenumber}}</td>
-       <td>{{item.address}}</td>
-       <td>{{item.comment}}</td>
-       {% url "admin:foodcartapp_order_change" object_id=item.id as the_url %}
-       <td><a href={{the_url}} ?next={{ request.get_full_path|urlencode }}>Ред</a></td>
+    <tr>
+      <td>{{item.id}}</td>
+      <td>{{item.get_status_display}}</td>
+      <td>{{item.order_price}} Руб. </td>
+      <th>{{item.get_payment_method_display}}</th>
+      <td>{{item.firstname}} {{item.lastname}} </td>
+      <td>{{item.phonenumber}}</td>
+      <td>{{item.address}}</td>
+      <td>{{item.comment}}</td>
+      <td>
+        <details>
+          <summary><p><strong>Рестораны</strong></p></summary>
+          {% for rest in item.restaurants.all %}
+          {{rest}} - {{ distances|get_by_key:item.id|get_by_key:rest.id}} Км
+          <br>
+          <br>
+          {% endfor %}
+        </details>
+      </td>
 
-     </tr>
+      {% url "admin:foodcartapp_order_change" object_id=item.id as the_url %}
+      <td><a href={{the_url}} ?next={{ request.get_full_path|urlencode }}>Ред</a></td>
+
+    </tr>
     {% endfor %}
-   </table>
-  </div>
+  </table>
+</div>
 {% endblock %}

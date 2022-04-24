@@ -4,7 +4,26 @@ from phonenumber_field.modelfields import PhoneNumberField
 from django.db.models import F, Count
 from django.core.validators import MinValueValidator, BaseValidator
 from django.core.exceptions import ValidationError
-from django.shortcuts import redirect
+from django.utils import timezone
+from functools import reduce
+from cords.models import Point
+from cords.views import fetch_coordinates
+
+
+class RestQuerySet(models.QuerySet):
+    def fetch_with_map_point(self):
+        for rest in self.all():
+            if not rest.map_point:
+                cords = fetch_coordinates(rest.address)
+                lng, lat = cords
+                point = Point.objects.create(lng=lng,
+                                             lat=lat,
+                                             address=rest.address)
+                rest.map_point = point
+                rest.save()
+
+        return self
+
 
 class Restaurant(models.Model):
     name = models.CharField(
@@ -21,6 +40,14 @@ class Restaurant(models.Model):
         max_length=50,
         blank=True,
     )
+    map_point = models.ForeignKey(Point,
+                                  verbose_name="Точка на карте",
+                                  related_name="rest",
+                                  null=True,
+                                  blank=True,
+                                  on_delete=models.CASCADE)
+
+    objects = RestQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'ресторан'
@@ -133,6 +160,37 @@ class OrderQuerySet(models.QuerySet):
 
         return self.annotate(order_price=models.Sum(prices))
 
+    def fetch_with_rest(self):
+        rests_by_meal = dict()
+
+        for order in self.all():
+            if not order.restaurants.count():
+                if not rests_by_meal:
+                    for product in Product.objects.all():
+                        rests_by_meal[product.id] = [m.restaurant.id for m in product.menu_items.all()]
+
+                product_ents = order.products.all()
+                possible_rests = [rests_by_meal[product_ent.product.id] for product_ent in product_ents]
+                common_rests_id = list(reduce(lambda i, j: i & j, (set(x) for x in possible_rests)))
+                common_rests = Restaurant.objects.filter(id__in=common_rests_id)
+                order.restaurants.set(common_rests)
+                order.save()
+
+        return self
+
+    def fetch_with_map_point(self):
+        for order in self.all():
+            if not order.map_point:
+                cords = fetch_coordinates(order.address)
+                if not cords:
+                    return
+                lng, lat = cords
+                point = Point.objects.create(lng=lng,
+                                             lat=lat,
+                                             address=order.address)
+                order.map_point = point
+                order.save()
+
 
 class Order(models.Model):
     address = models.CharField(max_length=100, verbose_name='Адресс')
@@ -147,7 +205,40 @@ class Order(models.Model):
                               choices=[('processed', 'Обработан'),
                                        ('unprocessed', 'Не обработан')])
 
-    comment = models.TextField(blank=True, verbose_name='коментарий к заказу', )
+    payment_method = models.CharField(default='unknown',
+                                      verbose_name='способ оплаты',
+                                      max_length=25,
+                                      db_index=True,
+                                      choices=[('cash', 'Наличные'),
+                                               ('card', 'Электронно'),
+                                               ('unknown', 'Не указано')])
+
+    comment = models.TextField(blank=True,
+                               verbose_name='коментарий к заказу', )
+
+    registration_time = models.DateTimeField(default=timezone.now,
+                                             verbose_name='Время регистрации заказа',
+                                             db_index=True)
+
+    call_time = models.DateTimeField(null=True,
+                                     blank=True,
+                                     verbose_name='Время звонка менеджера',
+                                     db_index=True)
+
+    delivery_time = models.DateTimeField(null=True,
+                                         blank=True,
+                                         verbose_name='Время доставки',
+                                         db_index=True)
+
+    map_point = models.ForeignKey(Point, verbose_name="Точка на карте",
+                                  related_name="order",
+                                  null=True,
+                                  blank=True,
+                                  on_delete=models.CASCADE)
+
+    restaurants = models.ManyToManyField(Restaurant,
+                                         blank=True,
+                                         verbose_name='Ресторан')
 
     class Meta:
         verbose_name = 'заказ'
@@ -156,20 +247,25 @@ class Order(models.Model):
     def __str__(self):
         return f'Заказ {self.id}'
 
-    def response_change(self, request, obj):
-        print(1111111) #
-        res = super(ModelAdmin, self).response_change(request, obj)
-        if "next" in request.GET:
-            return redirect(request.GET['next'])
-        else:
-            return res
-
 
 class ProductEntity(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Продукт')
-    order = models.ForeignKey(Order, related_name='products', on_delete=models.CASCADE, verbose_name='Заказ')
+    product = models.ForeignKey(Product,
+                                on_delete=models.CASCADE,
+                                verbose_name='Продукт',
+                                related_name='entities')
+
+    order = models.ForeignKey(Order,
+                              related_name='products',
+                              on_delete=models.CASCADE,
+                              verbose_name='Заказ')
+
     quantity = models.IntegerField(verbose_name='Кол-во')
-    price = models.DecimalField(verbose_name='Цена позиции', null=True, max_digits=7, decimal_places=2, validators=[MinValueValidator(0.0)])
+
+    price = models.DecimalField(verbose_name='Цена позиции',
+                                null=True,
+                                max_digits=7,
+                                decimal_places=2,
+                                validators=[MinValueValidator(0.0)])
 
     class Meta:
         verbose_name = 'заказаннй продукт'

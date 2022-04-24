@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.shortcuts import reverse
 from django.templatetags.static import static
 from django.utils.html import format_html
+from django.shortcuts import redirect
 
 from .models import Product
 from .models import ProductCategory
@@ -9,6 +10,7 @@ from .models import Restaurant
 from .models import RestaurantMenuItem
 from .models import Order
 from .models import ProductEntity
+from cords.models import Point
 
 
 class RestaurantMenuItemInline(admin.TabularInline):
@@ -120,5 +122,17 @@ class OrderInline(admin.TabularInline):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderInline, ]
+
+    def response_change(self, request, obj):
+        res = super(OrderAdmin, self).response_change(request, obj)
+        if "next" in request.GET:
+            return redirect(request.GET['next'])
+        else:
+            return res
+
+
+@admin.register(Point)
+class AdminPoint(admin.ModelAdmin):
+    pass
 
 

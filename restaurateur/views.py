@@ -5,9 +5,8 @@ from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
-from foodcartapp.models import Product, Restaurant, Order
-from django.template.context_processors import request as request_processor
-from django.template import RequestContext
+from foodcartapp.models import Product, Restaurant, Order, Restaurant, RestaurantMenuItem
+from geopy import distance
 
 
 class Login(forms.Form):
@@ -94,9 +93,31 @@ def view_restaurants(request):
     })
 
 
+def calculate_distance(point1, point2):
+    if point1 and point2:
+        first_place_cords = point1.lat, point1.lng
+        second_place_cords = point2.lat, point2.lng
+        return round(distance.distance(first_place_cords, second_place_cords).km, 2)
+    else:
+        return"Расстояние не найдено"
+
+
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    orders = Order.objects.filter(status='unprocessed').fetch_with_order_price()
+    orders = Order.objects.filter(status='unprocessed').\
+        prefetch_related('restaurants', 'products', 'map_point').\
+        fetch_with_order_price()
+
+    orders.fetch_with_rest()
+    orders.fetch_with_map_point()
+
+    distances = dict()
+    for order in orders:
+        order_point = order.map_point
+        distances[order.id] = dict()
+        for rest in order.restaurants.all():
+            distances[order.id][rest.id] = calculate_distance(rest.map_point, order_point)
 
     return render(request, template_name='order_items.html',
-                  context={'order_items': orders,})
+                  context={'order_items': orders,
+                           'distances': distances})

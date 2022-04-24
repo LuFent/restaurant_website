@@ -90,12 +90,11 @@ def register_order(request):
     serializer.is_valid(raise_exception=True)  # выкинет ValidationError
 
     order = Order.objects.create(
-        address = serializer.validated_data['address'],
-        firstname = serializer.validated_data['firstname'],
-        lastname = serializer.validated_data['lastname'],
-        phonenumber = serializer.validated_data['phonenumber'],
+        address=serializer.validated_data['address'],
+        firstname=serializer.validated_data['firstname'],
+        lastname=serializer.validated_data['lastname'],
+        phonenumber=serializer.validated_data['phonenumber'],
     )
-
     product_fields = serializer.validated_data['products']
     products = [ProductEntity(order=order,
                               product=fields['product'],
@@ -103,4 +102,5 @@ def register_order(request):
                               price=fields['product'].price)
                 for fields in product_fields]
     ProductEntity.objects.bulk_create(products)
+    Order.objects.filter(id=order.id).fetch_with_rest()
     return Response({**dict(serializer.data), 'id': order.id})
