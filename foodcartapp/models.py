@@ -256,7 +256,7 @@ class ProductEntity(models.Model):
                                 related_name='entities')
 
     order = models.ForeignKey(Order,
-                              related_name='products',
+                              related_name='products_entities',
                               on_delete=models.CASCADE,
                               verbose_name='Заказ')
 
