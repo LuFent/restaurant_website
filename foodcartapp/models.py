@@ -263,7 +263,6 @@ class ProductEntity(models.Model):
     quantity = models.IntegerField(verbose_name='Кол-во')
 
     price = models.DecimalField(verbose_name='Цена позиции',
-                                null=True,
                                 max_digits=7,
                                 decimal_places=2,
                                 validators=[MinValueValidator(0.0)])
