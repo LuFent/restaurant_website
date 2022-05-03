@@ -193,11 +193,6 @@ class OrderQuerySet(models.QuerySet):
 
 
 class Order(models.Model):
-    address = models.CharField(max_length=100, verbose_name='Адрес')
-    firstname = models.CharField(max_length=50, verbose_name='Имя')
-    lastname = models.CharField(max_length=50, verbose_name='Фамилия')
-    phonenumber = PhoneNumberField(db_index=True, verbose_name='Номер телефона')
-    objects = OrderQuerySet.as_manager()
     status = models.CharField(default='unprocessed',
                               verbose_name='статус заказа',
                               max_length=25,
@@ -213,6 +208,10 @@ class Order(models.Model):
                                                ('card', 'Электронно'),
                                                ('unknown', 'Не указано')])
 
+    address = models.CharField(max_length=100, verbose_name='Адрес')
+    firstname = models.CharField(max_length=50, verbose_name='Имя')
+    lastname = models.CharField(max_length=50, verbose_name='Фамилия')
+    phonenumber = PhoneNumberField(db_index=True, verbose_name='Номер телефона')
     comment = models.TextField(blank=True,
                                verbose_name='коментарий к заказу', )
 
@@ -239,6 +238,8 @@ class Order(models.Model):
     restaurants = models.ManyToManyField(Restaurant,
                                          blank=True,
                                          verbose_name='Ресторан')
+
+    objects = OrderQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'заказ'

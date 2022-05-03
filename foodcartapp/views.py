@@ -9,11 +9,9 @@ from phonenumbers.phonenumberutil import NumberParseException
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.serializers import CharField
-from rest_framework.serializers import IntegerField, SlugRelatedField
-from rest_framework.serializers import ListField
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import CharField, IntegerField, SlugRelatedField, ListField, ModelSerializer
 
+from django.core.validators import MinValueValidator
 
 def banners_list_api(request):
     # FIXME move data to db?
@@ -69,7 +67,7 @@ def product_list_api(request):
 
 class ProductEntitySerializer(ModelSerializer):
     product = SlugRelatedField(slug_field='id', queryset=Product.objects.all())
-
+    quantity = IntegerField(validators = [MinValueValidator(1)])
     class Meta:
         model = ProductEntity
         fields = ['quantity', 'product']
