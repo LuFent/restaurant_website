@@ -1,17 +1,18 @@
+import json
+
+from .models import Product, ProductEntity, Order
+from django.db import transaction
 from django.http import JsonResponse
 from django.templatetags.static import static
 from phonenumbers import parse, is_valid_number
 from phonenumbers.phonenumberutil import NumberParseException
-import json
-from .models import Product, ProductEntity, Order
-from rest_framework.decorators import api_view
 from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.serializers import CharField
-from rest_framework.serializers import ModelSerializer
-from rest_framework.serializers import ListField
 from rest_framework.serializers import IntegerField, SlugRelatedField
-from django.db import transaction
+from rest_framework.serializers import ListField
+from rest_framework.serializers import ModelSerializer
 
 
 def banners_list_api(request):

@@ -1,13 +1,13 @@
-from django.db import models
-from django.core.validators import MinValueValidator
-from phonenumber_field.modelfields import PhoneNumberField
-from django.db.models import F, Count
-from django.core.validators import MinValueValidator, BaseValidator
-from django.core.exceptions import ValidationError
-from django.utils import timezone
-from functools import reduce
 from cords.models import Point
 from cords.views import fetch_coordinates
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, BaseValidator
+from django.db import models
+from django.db.models import F, Count
+from django.utils import timezone
+from functools import reduce
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 class RestQuerySet(models.QuerySet):
@@ -193,7 +193,7 @@ class OrderQuerySet(models.QuerySet):
 
 
 class Order(models.Model):
-    address = models.CharField(max_length=100, verbose_name='Адресс')
+    address = models.CharField(max_length=100, verbose_name='Адрес')
     firstname = models.CharField(max_length=50, verbose_name='Имя')
     lastname = models.CharField(max_length=50, verbose_name='Фамилия')
     phonenumber = PhoneNumberField(db_index=True, verbose_name='Номер телефона')
