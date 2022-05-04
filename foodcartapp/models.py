@@ -15,10 +15,12 @@ class RestQuerySet(models.QuerySet):
         for rest in self.all():
             if not rest.map_point:
                 cords = fetch_coordinates(rest.address)
+                if not cords:
+                    continue
                 lng, lat = cords
-                point = Point.objects.create(lng=lng,
-                                             lat=lat,
-                                             address=rest.address)
+                point, _ = Point.objects.get_or_create(lng=lng,
+                                                    lat=lat,
+                                                    address=rest.address)
                 rest.map_point = point
                 rest.save()
 
@@ -155,41 +157,42 @@ class RestaurantMenuItem(models.Model):
 
 class OrderQuerySet(models.QuerySet):
     def fetch_with_order_price(self):
-        prices = models.ExpressionWrapper(models.F('products__price') * models.F('products__quantity'),
+        prices = models.ExpressionWrapper(models.F('products_entities__price') * models.F('products_entities__quantity'),
                                           output_field=models.DecimalField(max_digits=8, decimal_places=2))
 
         return self.annotate(order_price=models.Sum(prices))
 
     def fetch_with_rest(self):
         rests_by_meal = dict()
+        for product in Product.objects.all():
+            rests_by_meal[product.id] = [m.restaurant.id for m in product.menu_items.select_related("restaurant")]
 
-        for order in self.all():
-            if not order.restaurants.count():
-                if not rests_by_meal:
-                    for product in Product.objects.all():
-                        rests_by_meal[product.id] = [m.restaurant.id for m in product.menu_items.all()]
+        for order in self:
+            product_entities = order.products_entities.select_related('product')
+            possible_rests = [rests_by_meal[product_entity.product.id] for product_entity in product_entities]
+            common_rests_id = list(reduce(lambda i, j: i & j, (set(x) for x in possible_rests)))
+            order.possible_restaurants = Restaurant.objects.filter(id__in=common_rests_id)
 
-                product_ents = order.products.all()
-                possible_rests = [rests_by_meal[product_ent.product.id] for product_ent in product_ents]
-                common_rests_id = list(reduce(lambda i, j: i & j, (set(x) for x in possible_rests)))
-                common_rests = Restaurant.objects.filter(id__in=common_rests_id)
-                order.restaurants.set(common_rests)
-                order.save()
 
         return self
 
+
     def fetch_with_map_point(self):
-        for order in self.all():
-            if not order.map_point:
-                cords = fetch_coordinates(order.address)
-                if not cords:
-                    return
+        for order in self:
+#            if not order.map_point:
+            cords = fetch_coordinates(order.address)
+            print(order)
+            print(cords)
+            if not cords:
+                lng, lat = 0, 0
+            else:
                 lng, lat = cords
-                point = Point.objects.create(lng=lng,
-                                             lat=lat,
-                                             address=order.address)
-                order.map_point = point
-                order.save()
+
+            point, _ = Point.objects.get_or_create(lng=lng,
+                                         lat=lat,
+                                         address=order.address)
+            order.map_point = point
+            order.save()
 
 
 class Order(models.Model):

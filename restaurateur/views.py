@@ -8,6 +8,7 @@ from django.views import View
 from foodcartapp.models import Product, Restaurant, Order, Restaurant, RestaurantMenuItem
 from geopy import distance
 
+
 class Login(forms.Form):
     username = forms.CharField(
         label='Логин', max_length=75, required=True,
@@ -103,18 +104,20 @@ def calculate_distance(point1, point2):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
+    Restaurant.objects.fetch_with_map_point()
     orders = Order.objects.filter(status='unprocessed').\
-        prefetch_related('restaurants', 'products', 'map_point').\
-        fetch_with_order_price()
+                            prefetch_related('restaurants', 'products_entities').\
+                            select_related('map_point')
 
     orders.fetch_with_rest()
+    orders.fetch_with_order_price()
     orders.fetch_with_map_point()
 
     distances = dict()
     for order in orders:
         order_point = order.map_point
         distances[order.id] = dict()
-        for rest in order.restaurants.all():
+        for rest in order.possible_restaurants.select_related('map_point'):
             distances[order.id][rest.id] = calculate_distance(rest.map_point, order_point)
 
     return render(request, template_name='order_items.html',
