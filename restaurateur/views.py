@@ -2,10 +2,11 @@ from django import forms
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import user_passes_test
+from django.db.models import Prefetch
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views import View
-from foodcartapp.models import Product, Restaurant, Order, Restaurant, RestaurantMenuItem
+from foodcartapp.models import Product, Restaurant, Order, Restaurant, RestaurantMenuItem, ProductEntity
 from geopy import distance
 
 
@@ -94,7 +95,7 @@ def view_restaurants(request):
 
 
 def calculate_distance(point1, point2):
-    if point1 and point2:
+    if point1.lat and point1.lng and point2.lat and point2.lng:
         first_place_cords = point1.lat, point1.lng
         second_place_cords = point2.lat, point2.lng
         return round(distance.distance(first_place_cords, second_place_cords).km, 2)
@@ -104,20 +105,21 @@ def calculate_distance(point1, point2):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    Restaurant.objects.fetch_with_map_point()
+    Restaurant.objects.select_related('map_point').fetch_with_map_point()
     orders = Order.objects.filter(status='unprocessed').\
-                            prefetch_related('restaurants', 'products_entities').\
+                            prefetch_related(Prefetch('products_entities',
+                                                      queryset=ProductEntity.objects.select_related('product'))).\
                             select_related('map_point')
 
-    orders.fetch_with_rest()
     orders.fetch_with_order_price()
+    orders.fetch_with_rest()
     orders.fetch_with_map_point()
 
     distances = dict()
     for order in orders:
         order_point = order.map_point
         distances[order.id] = dict()
-        for rest in order.possible_restaurants.select_related('map_point'):
+        for rest in order.possible_restaurants:
             distances[order.id][rest.id] = calculate_distance(rest.map_point, order_point)
 
     return render(request, template_name='order_items.html',

@@ -8,21 +8,25 @@ from django.db.models import F, Count
 from django.utils import timezone
 from functools import reduce
 from phonenumber_field.modelfields import PhoneNumberField
+from django.db.models import Prefetch
 
 
 class RestQuerySet(models.QuerySet):
     def fetch_with_map_point(self):
-        for rest in self.all():
-            if not rest.map_point:
-                cords = fetch_coordinates(rest.address)
-                if not cords:
-                    continue
-                lng, lat = cords
-                point, _ = Point.objects.get_or_create(lng=lng,
-                                                    lat=lat,
-                                                    address=rest.address)
-                rest.map_point = point
-                rest.save()
+        for restaurant in self:
+            if restaurant.map_point and restaurant.map_point.lat and restaurant.map_point.lng:
+                continue
+
+            cords = fetch_coordinates(restaurant.address)
+            if not cords:
+                lng, lat = None, None
+
+            lng, lat = cords
+            point, _ = Point.objects.get_or_create(lng=lng,
+                                                lat=lat,
+                                                address=restaurant.address)
+            restaurant.map_point = point
+            restaurant.save()
 
         return self
 
@@ -163,32 +167,32 @@ class OrderQuerySet(models.QuerySet):
         return self.annotate(order_price=models.Sum(prices))
 
     def fetch_with_rest(self):
-        rests_by_meal = dict()
-        for product in Product.objects.all():
-            rests_by_meal[product.id] = [m.restaurant.id for m in product.menu_items.select_related("restaurant")]
+        restaurants_by_meal = dict()
+        for product in Product.objects.prefetch_related(Prefetch('menu_items',
+                     queryset=RestaurantMenuItem.objects.filter(availability=True).
+                         select_related('restaurant', 'restaurant__map_point'))):
+
+            restaurants_by_meal[product.id] = [m.restaurant for m in product.menu_items.all()]
 
         for order in self:
-            product_entities = order.products_entities.select_related('product')
-            possible_rests = [rests_by_meal[product_entity.product.id] for product_entity in product_entities]
-            common_rests_id = list(reduce(lambda i, j: i & j, (set(x) for x in possible_rests)))
-            order.possible_restaurants = Restaurant.objects.filter(id__in=common_rests_id)
-
-
+            product_entities = order.products_entities.all()
+            products_restaurants = [restaurants_by_meal[product_entity.product.id] for product_entity in product_entities]
+            common_restaurants = set.intersection(*map(set, products_restaurants))
+            order.possible_restaurants = common_restaurants
         return self
 
 
     def fetch_with_map_point(self):
         for order in self:
-#            if not order.map_point:
+            if order.map_point and order.map_point.lat and order.map_point.lng:
+                continue
             cords = fetch_coordinates(order.address)
-            print(order)
-            print(cords)
             if not cords:
-                lng, lat = 0, 0
+                lng, lat = None, None
             else:
                 lng, lat = cords
 
-            point, _ = Point.objects.get_or_create(lng=lng,
+            point, cre = Point.objects.get_or_create(lng=lng,
                                          lat=lat,
                                          address=order.address)
             order.map_point = point

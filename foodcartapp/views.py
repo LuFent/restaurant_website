@@ -101,5 +101,5 @@ def register_order(request):
                               price=fields['product'].price)
                 for fields in product_fields]
     ProductEntity.objects.bulk_create(products)
-    Order.objects.filter(id=order.id).fetch_with_rest()
+    Order.objects.filter(id=order.id).fetch_with_rest().fetch_with_map_point()
     return Response({**dict(serializer.data), 'id': order.id})

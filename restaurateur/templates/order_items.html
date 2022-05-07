@@ -39,7 +39,7 @@
       <td>
         <details>
           <summary><p><strong>Рестораны</strong></p></summary>
-          {% for rest in item.possible_restaurants.all %}
+          {% for rest in item.possible_restaurants %}
           {{rest}} - {{ distances|get_by_key:item.id|get_by_key:rest.id}} Км
           <br>
           <br>
