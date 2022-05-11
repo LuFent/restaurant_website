@@ -18,10 +18,8 @@ class RestQuerySet(models.QuerySet):
                 continue
 
             coords = fetch_coordinates(restaurant.address)
-            if not coords:
-                lng, lat = None, None
-
             lng, lat = coords
+
             point, _ = Point.objects.get_or_create(lng=lng,
                                                 lat=lat,
                                                 address=restaurant.address)
@@ -186,13 +184,11 @@ class OrderQuerySet(models.QuerySet):
         for order in self:
             if order.map_point and order.map_point.lat and order.map_point.lng:
                 continue
-            coords = fetch_coordinates(order.address)
-            if not coords:
-                lng, lat = None, None
-            else:
-                lng, lat = coords
 
-            point, cre = Point.objects.get_or_create(lng=lng,
+            coords = fetch_coordinates(order.address)
+            lng, lat = coords
+
+            point, _ = Point.objects.get_or_create(lng=lng,
                                          lat=lat,
                                          address=order.address)
             order.map_point = point
