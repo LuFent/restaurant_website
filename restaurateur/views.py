@@ -111,9 +111,10 @@ def view_orders(request):
                                                       queryset=ProductEntity.objects.select_related('product'))).\
                             select_related('map_point')
 
-    orders.fetch_with_order_price()
-    orders.fetch_with_rest()
-    orders.fetch_with_map_point()
+    orders = orders.fetch_with_order_price()
+    orders = orders.fetch_with_rest()
+    orders = orders.fetch_with_map_point()
+
 
     distances = dict()
     for order in orders:

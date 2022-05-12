@@ -48,7 +48,7 @@
       </td>
 
       {% url "admin:foodcartapp_order_change" object_id=item.id as the_url %}
-      <td><a href={{the_url}} ?next={{ request.get_full_path|urlencode }}>Ред</a></td>
+      <td><a href={{the_url}}?next={{ request.get_full_path|urlencode }}>Ред</a></td>
 
     </tr>
     {% endfor %}

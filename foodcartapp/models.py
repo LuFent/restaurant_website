@@ -181,18 +181,18 @@ class OrderQuerySet(models.QuerySet):
 
 
     def fetch_with_map_point(self):
+
         for order in self:
-            if order.map_point and order.map_point.lat and order.map_point.lng:
+            if order.map_point and order.map_point.lat:
                 continue
 
             coords = fetch_coordinates(order.address)
             lng, lat = coords
 
-            point, _ = Point.objects.get_or_create(lng=lng,
-                                         lat=lat,
-                                         address=order.address)
+            point, _ = Point.objects.get_or_create(defaults= {lng: lng, lat: lat}, address=order.address)
             order.map_point = point
             order.save()
+        return self
 
 
 class Order(models.Model):
