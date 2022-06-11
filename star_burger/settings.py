@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 YANDEX_API_KEY = env('YANDEX_KEY')
-SECRET_KEY = env('SECRET_KEY', 'etirgvonenrfnoerngorenogneongg334g')
+SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', True)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
@@ -41,6 +41,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'rollbar.contrib.django.middleware.RollbarNotifierMiddleware',
 ]
 
 ROOT_URLCONF = 'star_burger.urls'
@@ -58,6 +59,7 @@ DEBUG_TOOLBAR_PANELS = [
     'debug_toolbar.panels.signals.SignalsPanel',
     'debug_toolbar.panels.logging.LoggingPanel',
     'debug_toolbar.panels.redirects.RedirectsPanel',
+
 ]
 
 TEMPLATES = [
@@ -87,11 +89,18 @@ WSGI_APPLICATION = 'star_burger.wsgi.application'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
+
 DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:////{0}'.format(os.path.join(BASE_DIR, 'db.sqlite3'))
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'starburger',
+        'USER': 'admin',
+        'PASSWORD': 'qweasdzxc',
+        'HOST': 'localhost',
+        'PORT': '',
+    }
 }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -129,3 +138,16 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "assets"),
     os.path.join(BASE_DIR, "bundles"),
 ]
+
+
+rollbar_token = env('ROLLBAR_TOKEN', None)
+
+if rollbar_token:
+    ROLLBAR = {
+        'access_token': rollbar_token,
+        'environment': env('ROLLBAR_ENV'),
+        'root': BASE_DIR,
+    }
+    import rollbar
+    rollbar.init(**ROLLBAR)
+
