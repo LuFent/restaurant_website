@@ -140,14 +140,14 @@ STATICFILES_DIRS = [
 ]
 
 
-rollbar_token = env('ROLLBAR_TOKEN', None)
+ROLLBAR_TOKEN = env('ROLLBAR_TOKEN', None)
 
-if rollbar_token:
-    ROLLBAR = {
-        'access_token': rollbar_token,
+if ROLLBAR_TOKEN:
+    rollbar_params = {
+        'access_token': ROLLBAR_TOKEN,
         'environment': env('ROLLBAR_ENV'),
         'root': BASE_DIR,
     }
     import rollbar
-    rollbar.init(**ROLLBAR)
+    rollbar.init(**rollbar_params)
 
