@@ -41,11 +41,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
-
     'rollbar.contrib.django.middleware.RollbarNotifierMiddlewareExcluding404',
-
-
-
 ]
 
 ROOT_URLCONF = 'star_burger.urls'
@@ -97,18 +93,11 @@ MEDIA_URL = '/media/'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        
-
+	'NAME': 'starburger',
         'USER': env('DB_USER'),
         'PASSWORD': env('DB_PASSWORD'),
         'HOST': env('DB_HOST'),
         'PORT': env('DB_PORT', ''),
-
-
-
-
-
-
     }
 }
 
