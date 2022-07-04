@@ -150,11 +150,11 @@ Parcel будет следить за файлами в каталоге `bundle
 - `ROLLBAR_TOKEN` - Токен Роллбара с правом на запись (Не обязателен)
 - `ROLLBAR_ENV`= Env Роллбара (Например, `production`)
 - Настройки Бд на Postgres:
-    - `DB_NAME`= Имя ДБ 
-    - `DB_USER`= Юзер ДБ
-    - `DB_PASSWORD`=Пароль ДБ
-    - `DB_HOST`= Хост ДБ
-
+    - `DB_NAME`- Имя ДБ 
+    - `DB_USER`- Юзер ДБ
+    - `DB_PASSWORD`- Пароль ДБ
+    - `DB_HOST`- Хост ДБ
+    - `DB_PORT`- Порт бд
 
 
 ---
