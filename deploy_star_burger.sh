@@ -23,6 +23,7 @@ python3 manage.py migrate
 echo -e "${BLUE}Restarting servers${NC}"
 systemctl stop burgers
 
+systemctl reload nginx
 systemctl daemon-reload
 
 systemctl start burgers
