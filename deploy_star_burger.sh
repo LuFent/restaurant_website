@@ -19,9 +19,9 @@ venv/bin/python3 manage.py collectstatic --noinput
 
 python3 manage.py migrate --noinput
 
-./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 
 echo -e "${BLUE}Building JS${NC}"
+./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 
 echo -e "${BLUE}Restarting servers${NC}"
 systemctl stop burgers
